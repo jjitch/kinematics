@@ -4,13 +4,54 @@ updates:
     directory: /
     schedule:
       interval: weekly
+    groups:
+      # wasm-bindgen crates must stay in sync — bump together
+      wasm-bindgen:
+        patterns:
+          - "wasm-bindgen*"
+      # future math/physics crates (nalgebra, glam, …)
+      math:
+        patterns:
+          - "nalgebra*"
+          - "glam*"
+          - "simba*"
+      # low-noise: batch all remaining patch bumps into one PR
+      cargo-patch:
+        update-type: "patch"
 
   - package-ecosystem: npm
     directory: /frontend
     schedule:
       interval: weekly
+    groups:
+      # vite core + wasm/top-level-await plugins must stay compatible
+      vite:
+        patterns:
+          - "vite"
+          - "vite-plugin-*"
+      # TypeScript compiler + ESLint parser must stay in sync
+      typescript:
+        patterns:
+          - "typescript"
+          - "@typescript-eslint/*"
+      # ESLint core + config packages
+      eslint:
+        patterns:
+          - "eslint"
+          - "@eslint/*"
 
   - package-ecosystem: github-actions
     directory: /
     schedule:
       interval: weekly
+    groups:
+      # official actions/* actions in one PR
+      github-actions-official:
+        patterns:
+          - "actions/*"
+      # third-party actions (dtolnay, etc.) in a separate PR
+      github-actions-third-party:
+        patterns:
+          - "*"
+        exclude-patterns:
+          - "actions/*"
