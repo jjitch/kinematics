@@ -15,7 +15,7 @@ impl Ray {
     }
 
     pub fn at(&self, t: f32) -> Vec3 {
-        todo!()
+        self.origin + self.direction.as_ref() * t
     }
 }
 
@@ -31,15 +31,15 @@ impl Segment {
     }
 
     pub fn length(&self) -> f32 {
-        todo!()
+        (self.end - self.start).norm()
     }
 
     pub fn direction(&self) -> Option<Direction3> {
-        todo!()
+        Direction3::try_new(self.end - self.start, f32::EPSILON)
     }
 
     pub fn at(&self, t: f32) -> Vec3 {
-        todo!()
+        self.start + (self.end - self.start) * t
     }
 }
 
@@ -55,7 +55,7 @@ impl Line {
     }
 
     pub fn at(&self, t: f32) -> Vec3 {
-        todo!()
+        self.point + self.direction.as_ref() * t
     }
 }
 
@@ -72,11 +72,12 @@ impl Plane {
     }
 
     pub fn from_point_normal(point: Vec3, normal: Direction3) -> Self {
-        todo!()
+        let distance = normal.dot(&point);
+        Self { normal, distance }
     }
 
     pub fn signed_distance_to_point(&self, point: &Vec3) -> f32 {
-        todo!()
+        self.normal.dot(point) - self.distance
     }
 }
 
@@ -92,7 +93,7 @@ impl Sphere {
     }
 
     pub fn contains(&self, point: &Vec3) -> bool {
-        todo!()
+        (point - self.center).norm_squared() <= self.radius * self.radius
     }
 }
 
@@ -108,15 +109,20 @@ impl Aabb {
     }
 
     pub fn contains(&self, point: &Vec3) -> bool {
-        todo!()
+        point.x >= self.min.x
+            && point.x <= self.max.x
+            && point.y >= self.min.y
+            && point.y <= self.max.y
+            && point.z >= self.min.z
+            && point.z <= self.max.z
     }
 
     pub fn center(&self) -> Vec3 {
-        todo!()
+        (self.min + self.max) * 0.5
     }
 
     pub fn half_extents(&self) -> Vec3 {
-        todo!()
+        (self.max - self.min) * 0.5
     }
 }
 
@@ -133,11 +139,11 @@ impl Triangle {
     }
 
     pub fn normal(&self) -> Option<Direction3> {
-        todo!()
+        Direction3::try_new((self.b - self.a).cross(&(self.c - self.a)), f32::EPSILON)
     }
 
     pub fn area(&self) -> f32 {
-        todo!()
+        (self.b - self.a).cross(&(self.c - self.a)).norm() * 0.5
     }
 }
 
@@ -250,7 +256,11 @@ mod tests {
     // --- Triangle ---
     #[test]
     fn triangle_area_right_triangle() {
-        let t = Triangle::new(Vec3::zeros(), Vec3::new(3.0, 0.0, 0.0), Vec3::new(0.0, 4.0, 0.0));
+        let t = Triangle::new(
+            Vec3::zeros(),
+            Vec3::new(3.0, 0.0, 0.0),
+            Vec3::new(0.0, 4.0, 0.0),
+        );
         assert_abs_diff_eq!(t.area(), 6.0, epsilon = 1e-6);
     }
 
@@ -262,7 +272,11 @@ mod tests {
 
     #[test]
     fn triangle_normal_points_up_for_xy_triangle() {
-        let t = Triangle::new(Vec3::zeros(), Vec3::new(1.0, 0.0, 0.0), Vec3::new(0.0, 1.0, 0.0));
+        let t = Triangle::new(
+            Vec3::zeros(),
+            Vec3::new(1.0, 0.0, 0.0),
+            Vec3::new(0.0, 1.0, 0.0),
+        );
         let n = t.normal().unwrap();
         assert_abs_diff_eq!(n.into_inner(), Vec3::new(0.0, 0.0, 1.0), epsilon = 1e-6);
     }

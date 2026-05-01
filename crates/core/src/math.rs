@@ -7,19 +7,19 @@ pub type Mat4 = nalgebra::Matrix4<f32>;
 pub type Quat = nalgebra::UnitQuaternion<f32>;
 
 pub fn lerp(a: f32, b: f32, t: f32) -> f32 {
-    todo!()
+    a + (b - a) * t
 }
 
 pub fn clamp(val: f32, min: f32, max: f32) -> f32 {
-    todo!()
+    val.clamp(min, max)
 }
 
 pub fn deg_to_rad(deg: f32) -> f32 {
-    todo!()
+    deg.to_radians()
 }
 
 pub fn rad_to_deg(rad: f32) -> f32 {
-    todo!()
+    rad.to_degrees()
 }
 
 #[cfg(test)]
