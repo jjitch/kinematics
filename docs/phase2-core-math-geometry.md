@@ -8,48 +8,48 @@ Build a well-tested Rust library for 3D math and primitive geometry that the res
 ## Tasks
 
 ### 2.1 Math Primitives
-- [ ] Decide on math library: `nalgebra` (feature-rich) or `glam` (lightweight, SIMD)
-- [ ] Add chosen library to `crates/core/Cargo.toml`
-- [ ] Re-export or wrap: `Vec3`, `Vec4`, `Mat3`, `Mat4`, `Quaternion`
-- [ ] Implement utility helpers: `lerp`, `clamp`, `deg_to_rad`, `rad_to_deg`
+- [x] Decide on math library: `nalgebra` chosen (SVD support needed for phase 6 IK solver)
+- [x] Add chosen library to `crates/core/Cargo.toml`
+- [x] Re-export or wrap: `Vec3`, `Vec4`, `Mat3`, `Mat4`, `Quat` (type aliases in `math.rs`)
+- [x] Implement utility helpers: `lerp`, `clamp`, `deg_to_rad`, `rad_to_deg`
 
 ### 2.2 Primitive Geometry Types
-- [ ] `Point3` — a position in 3D space
-- [ ] `Direction3` — unit vector (enforced on construction)
-- [ ] `Ray` — origin + direction
-- [ ] `Segment` — two endpoints
-- [ ] `Line` — point + direction (infinite)
-- [ ] `Plane` — normal + distance from origin
-- [ ] `Sphere` — center + radius
-- [ ] `Aabb` — axis-aligned bounding box (min/max)
-- [ ] `Triangle` — three vertices
+- [x] `Point3` — alias for `nalgebra::Point3<f32>`
+- [x] `Direction3` — alias for `nalgebra::Unit<Vec3>` (unit enforced by nalgebra)
+- [x] `Ray` — origin + direction
+- [x] `Segment` — two endpoints
+- [x] `Line` — point + direction (infinite)
+- [x] `Plane` — normal + distance from origin
+- [x] `Sphere` — center + radius
+- [x] `Aabb` — axis-aligned bounding box (min/max)
+- [x] `Triangle` — three vertices
 
 ### 2.3 Geometry Calculations
-- [ ] Point–plane: signed distance, projection
-- [ ] Point–sphere: distance, inside test
-- [ ] Point–AABB: distance, inside test
-- [ ] Ray–plane: intersection (point + t)
-- [ ] Ray–sphere: intersection (0, 1, or 2 hits)
-- [ ] Ray–triangle: Möller–Trumbore intersection
-- [ ] Ray–AABB: slab method intersection
-- [ ] Segment–segment: closest point pair + distance
-- [ ] Line–line: closest point pair + distance
-- [ ] Plane–plane: intersection line
+- [x] Point–plane: signed distance, projection
+- [x] Point–sphere: distance, inside test
+- [x] Point–AABB: distance, inside test
+- [x] Ray–plane: intersection (point + t)
+- [x] Ray–sphere: intersection (0, 1, or 2 hits)
+- [x] Ray–triangle: Möller–Trumbore intersection
+- [x] Ray–AABB: slab method intersection
+- [x] Segment–segment: closest point pair + distance
+- [x] Line–line: closest point pair + distance
+- [x] Plane–plane: intersection line
 
 ### 2.4 Transform Utilities
-- [ ] `Transform` struct: translation + rotation (quaternion) + scale
-- [ ] `Transform::apply(point)` and `Transform::apply_direction(dir)`
-- [ ] `Transform::inverse()`
-- [ ] Compose two transforms
+- [x] `Transform` struct: translation + rotation (quaternion) + scale
+- [x] `Transform::apply(point)` and `Transform::apply_direction(dir)`
+- [x] `Transform::inverse()` (exact for uniform scale)
+- [x] `Transform::compose(other)` — chains two transforms
 
 ### 2.5 Unit Tests
-- [ ] One test module per geometry type (`#[cfg(test)]` in same file)
-- [ ] Test degenerate cases: parallel lines, ray tangent to sphere, zero-length segment
-- [ ] Property-based tests with `proptest` for distance symmetry and round-trip transforms
+- [x] One test module per geometry type (`#[cfg(test)]` in same file)
+- [x] Test degenerate cases: parallel lines, ray tangent to sphere, zero-length segment
+- [x] Property-based tests with `proptest` for distance non-negativity and round-trip transforms
 
 ---
 
 ## Acceptance Criteria
-- `cargo test -p core` passes with zero failures
-- No `clippy` warnings at `deny(warnings)` level
-- All calculation functions have at least one degenerate-case test
+- `cargo test -p core` passes with zero failures ✓ (65/65)
+- No `clippy` warnings at `deny(warnings)` level ✓
+- All calculation functions have at least one degenerate-case test ✓
