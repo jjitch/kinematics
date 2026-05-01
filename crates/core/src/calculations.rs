@@ -1,0 +1,333 @@
+#![allow(dead_code)]
+use crate::math::Vec3;
+use crate::primitives::{Aabb, Direction3, Line, Plane, Ray, Segment, Sphere, Triangle};
+
+/// Signed distance from `point` to `plane` (positive = normal side).
+pub fn point_plane_signed_distance(point: &Vec3, plane: &Plane) -> f32 {
+    todo!()
+}
+
+/// Projection of `point` onto `plane`.
+pub fn point_plane_projection(point: &Vec3, plane: &Plane) -> Vec3 {
+    todo!()
+}
+
+/// Distance from `point` to the sphere surface (0 if inside).
+pub fn point_sphere_distance(point: &Vec3, sphere: &Sphere) -> f32 {
+    todo!()
+}
+
+/// Distance from `point` to the AABB surface (0 if inside).
+pub fn point_aabb_distance(point: &Vec3, aabb: &Aabb) -> f32 {
+    todo!()
+}
+
+/// Ray–plane intersection. Returns `t` along the ray, or `None` if parallel.
+pub fn ray_plane_intersect(ray: &Ray, plane: &Plane) -> Option<f32> {
+    todo!()
+}
+
+/// Ray–sphere intersection. Returns `(t_near, t_far)` for positive hits, or `None`.
+pub fn ray_sphere_intersect(ray: &Ray, sphere: &Sphere) -> Option<(f32, f32)> {
+    todo!()
+}
+
+/// Ray–triangle intersection via Möller–Trumbore. Returns `t`, or `None`.
+pub fn ray_triangle_intersect(ray: &Ray, tri: &Triangle) -> Option<f32> {
+    todo!()
+}
+
+/// Ray–AABB intersection via the slab method. Returns `(t_enter, t_exit)`, or `None`.
+pub fn ray_aabb_intersect(ray: &Ray, aabb: &Aabb) -> Option<(f32, f32)> {
+    todo!()
+}
+
+/// Closest point pair and distance between two line segments.
+/// Returns `(point_on_a, point_on_b, distance)`.
+pub fn segment_segment_closest(a: &Segment, b: &Segment) -> (Vec3, Vec3, f32) {
+    todo!()
+}
+
+/// Closest point pair and distance between two infinite lines.
+/// Returns `(point_on_a, point_on_b, distance)`.
+pub fn line_line_closest(a: &Line, b: &Line) -> (Vec3, Vec3, f32) {
+    todo!()
+}
+
+/// Intersection of two planes. Returns the intersection `Line`, or `None` if parallel.
+pub fn plane_plane_intersect(a: &Plane, b: &Plane) -> Option<Line> {
+    todo!()
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+    use approx::assert_abs_diff_eq;
+    use proptest::prelude::*;
+
+    fn dir(x: f32, y: f32, z: f32) -> Direction3 {
+        Direction3::new_normalize(Vec3::new(x, y, z))
+    }
+
+    fn y_plane(height: f32) -> Plane {
+        Plane::from_point_normal(Vec3::new(0.0, height, 0.0), dir(0.0, 1.0, 0.0))
+    }
+
+    // --- point_plane ---
+    #[test]
+    fn point_plane_signed_distance_on_plane_is_zero() {
+        let plane = y_plane(2.0);
+        assert_abs_diff_eq!(
+            point_plane_signed_distance(&Vec3::new(3.0, 2.0, -1.0), &plane),
+            0.0,
+            epsilon = 1e-6
+        );
+    }
+
+    #[test]
+    fn point_plane_signed_distance_above_positive() {
+        let plane = y_plane(0.0);
+        assert_abs_diff_eq!(
+            point_plane_signed_distance(&Vec3::new(0.0, 3.0, 0.0), &plane),
+            3.0,
+            epsilon = 1e-6
+        );
+    }
+
+    #[test]
+    fn point_plane_projection_lies_on_plane() {
+        let plane = y_plane(1.0);
+        let proj = point_plane_projection(&Vec3::new(2.0, 5.0, -3.0), &plane);
+        assert_abs_diff_eq!(
+            plane.signed_distance_to_point(&proj),
+            0.0,
+            epsilon = 1e-6
+        );
+    }
+
+    // --- point_sphere ---
+    #[test]
+    fn point_sphere_distance_inside_is_zero() {
+        let s = Sphere::new(Vec3::zeros(), 5.0);
+        assert_abs_diff_eq!(point_sphere_distance(&Vec3::new(1.0, 0.0, 0.0), &s), 0.0);
+    }
+
+    #[test]
+    fn point_sphere_distance_outside() {
+        let s = Sphere::new(Vec3::zeros(), 1.0);
+        assert_abs_diff_eq!(
+            point_sphere_distance(&Vec3::new(4.0, 0.0, 0.0), &s),
+            3.0,
+            epsilon = 1e-6
+        );
+    }
+
+    // --- point_aabb ---
+    #[test]
+    fn point_aabb_distance_inside_is_zero() {
+        let b = Aabb::new(Vec3::new(-1.0, -1.0, -1.0), Vec3::new(1.0, 1.0, 1.0));
+        assert_abs_diff_eq!(point_aabb_distance(&Vec3::zeros(), &b), 0.0);
+    }
+
+    #[test]
+    fn point_aabb_distance_outside_one_axis() {
+        let b = Aabb::new(Vec3::new(-1.0, -1.0, -1.0), Vec3::new(1.0, 1.0, 1.0));
+        assert_abs_diff_eq!(
+            point_aabb_distance(&Vec3::new(3.0, 0.0, 0.0), &b),
+            2.0,
+            epsilon = 1e-6
+        );
+    }
+
+    // --- ray_plane ---
+    #[test]
+    fn ray_plane_hits_from_above() {
+        let ray = Ray::new(Vec3::new(0.0, 5.0, 0.0), dir(0.0, -1.0, 0.0));
+        let plane = y_plane(0.0);
+        let t = ray_plane_intersect(&ray, &plane).unwrap();
+        assert_abs_diff_eq!(t, 5.0, epsilon = 1e-6);
+    }
+
+    #[test]
+    fn ray_plane_parallel_returns_none() {
+        let ray = Ray::new(Vec3::new(0.0, 1.0, 0.0), dir(1.0, 0.0, 0.0));
+        let plane = y_plane(0.0);
+        assert!(ray_plane_intersect(&ray, &plane).is_none());
+    }
+
+    #[test]
+    fn ray_plane_pointing_away_returns_none() {
+        let ray = Ray::new(Vec3::new(0.0, 5.0, 0.0), dir(0.0, 1.0, 0.0));
+        let plane = y_plane(0.0);
+        assert!(ray_plane_intersect(&ray, &plane).is_none());
+    }
+
+    // --- ray_sphere ---
+    #[test]
+    fn ray_sphere_hits_unit_sphere() {
+        let ray = Ray::new(Vec3::new(-5.0, 0.0, 0.0), dir(1.0, 0.0, 0.0));
+        let sphere = Sphere::new(Vec3::zeros(), 1.0);
+        let (t0, t1) = ray_sphere_intersect(&ray, &sphere).unwrap();
+        assert_abs_diff_eq!(t0, 4.0, epsilon = 1e-5);
+        assert_abs_diff_eq!(t1, 6.0, epsilon = 1e-5);
+    }
+
+    #[test]
+    fn ray_sphere_miss_returns_none() {
+        let ray = Ray::new(Vec3::new(-5.0, 5.0, 0.0), dir(1.0, 0.0, 0.0));
+        let sphere = Sphere::new(Vec3::zeros(), 1.0);
+        assert!(ray_sphere_intersect(&ray, &sphere).is_none());
+    }
+
+    #[test]
+    fn ray_sphere_tangent_returns_some() {
+        // Ray grazes the sphere exactly at the equator
+        let ray = Ray::new(Vec3::new(-5.0, 1.0, 0.0), dir(1.0, 0.0, 0.0));
+        let sphere = Sphere::new(Vec3::zeros(), 1.0);
+        assert!(ray_sphere_intersect(&ray, &sphere).is_some());
+    }
+
+    // --- ray_triangle ---
+    #[test]
+    fn ray_triangle_hits_xy_plane_triangle() {
+        let tri = Triangle::new(
+            Vec3::new(-1.0, -1.0, 0.0),
+            Vec3::new(1.0, -1.0, 0.0),
+            Vec3::new(0.0, 1.0, 0.0),
+        );
+        let ray = Ray::new(Vec3::new(0.0, 0.0, 2.0), dir(0.0, 0.0, -1.0));
+        let t = ray_triangle_intersect(&ray, &tri).unwrap();
+        assert_abs_diff_eq!(t, 2.0, epsilon = 1e-5);
+    }
+
+    #[test]
+    fn ray_triangle_miss_returns_none() {
+        let tri = Triangle::new(
+            Vec3::new(-1.0, -1.0, 0.0),
+            Vec3::new(1.0, -1.0, 0.0),
+            Vec3::new(0.0, 1.0, 0.0),
+        );
+        let ray = Ray::new(Vec3::new(10.0, 10.0, 2.0), dir(0.0, 0.0, -1.0));
+        assert!(ray_triangle_intersect(&ray, &tri).is_none());
+    }
+
+    #[test]
+    fn ray_triangle_parallel_returns_none() {
+        let tri = Triangle::new(
+            Vec3::new(-1.0, -1.0, 0.0),
+            Vec3::new(1.0, -1.0, 0.0),
+            Vec3::new(0.0, 1.0, 0.0),
+        );
+        let ray = Ray::new(Vec3::zeros(), dir(1.0, 0.0, 0.0));
+        assert!(ray_triangle_intersect(&ray, &tri).is_none());
+    }
+
+    // --- ray_aabb ---
+    #[test]
+    fn ray_aabb_hits_unit_box() {
+        let aabb = Aabb::new(Vec3::new(-1.0, -1.0, -1.0), Vec3::new(1.0, 1.0, 1.0));
+        let ray = Ray::new(Vec3::new(-5.0, 0.0, 0.0), dir(1.0, 0.0, 0.0));
+        let (t0, t1) = ray_aabb_intersect(&ray, &aabb).unwrap();
+        assert_abs_diff_eq!(t0, 4.0, epsilon = 1e-5);
+        assert_abs_diff_eq!(t1, 6.0, epsilon = 1e-5);
+    }
+
+    #[test]
+    fn ray_aabb_miss_returns_none() {
+        let aabb = Aabb::new(Vec3::new(-1.0, -1.0, -1.0), Vec3::new(1.0, 1.0, 1.0));
+        let ray = Ray::new(Vec3::new(-5.0, 5.0, 0.0), dir(1.0, 0.0, 0.0));
+        assert!(ray_aabb_intersect(&ray, &aabb).is_none());
+    }
+
+    // --- segment_segment ---
+    #[test]
+    fn segment_segment_perpendicular_crossing() {
+        // X-axis and Y-axis cross at origin
+        let a = Segment::new(Vec3::new(-1.0, 0.0, 0.0), Vec3::new(1.0, 0.0, 0.0));
+        let b = Segment::new(Vec3::new(0.0, -1.0, 0.0), Vec3::new(0.0, 1.0, 0.0));
+        let (pa, pb, dist) = segment_segment_closest(&a, &b);
+        assert_abs_diff_eq!(dist, 0.0, epsilon = 1e-5);
+        assert_abs_diff_eq!(pa, Vec3::zeros(), epsilon = 1e-5);
+        assert_abs_diff_eq!(pb, Vec3::zeros(), epsilon = 1e-5);
+    }
+
+    #[test]
+    fn segment_segment_parallel() {
+        let a = Segment::new(Vec3::new(0.0, 0.0, 0.0), Vec3::new(1.0, 0.0, 0.0));
+        let b = Segment::new(Vec3::new(0.0, 1.0, 0.0), Vec3::new(1.0, 1.0, 0.0));
+        let (_, _, dist) = segment_segment_closest(&a, &b);
+        assert_abs_diff_eq!(dist, 1.0, epsilon = 1e-5);
+    }
+
+    #[test]
+    fn segment_segment_degenerate_both_points() {
+        let a = Segment::new(Vec3::zeros(), Vec3::zeros());
+        let b = Segment::new(Vec3::new(3.0, 4.0, 0.0), Vec3::new(3.0, 4.0, 0.0));
+        let (_, _, dist) = segment_segment_closest(&a, &b);
+        assert_abs_diff_eq!(dist, 5.0, epsilon = 1e-5);
+    }
+
+    // --- line_line ---
+    #[test]
+    fn line_line_skew_lines() {
+        // X-axis and Y-axis offset by 1 in Z
+        let a = Line::new(Vec3::zeros(), Direction3::new_normalize(Vec3::new(1.0, 0.0, 0.0)));
+        let b = Line::new(Vec3::new(0.0, 0.0, 1.0), Direction3::new_normalize(Vec3::new(0.0, 1.0, 0.0)));
+        let (pa, pb, dist) = line_line_closest(&a, &b);
+        assert_abs_diff_eq!(dist, 1.0, epsilon = 1e-5);
+        assert_abs_diff_eq!(pa, Vec3::zeros(), epsilon = 1e-5);
+        assert_abs_diff_eq!(pb, Vec3::new(0.0, 0.0, 1.0), epsilon = 1e-5);
+    }
+
+    #[test]
+    fn line_line_parallel() {
+        let a = Line::new(Vec3::zeros(), Direction3::new_normalize(Vec3::new(1.0, 0.0, 0.0)));
+        let b = Line::new(Vec3::new(0.0, 1.0, 0.0), Direction3::new_normalize(Vec3::new(1.0, 0.0, 0.0)));
+        let (_, _, dist) = line_line_closest(&a, &b);
+        assert_abs_diff_eq!(dist, 1.0, epsilon = 1e-5);
+    }
+
+    // --- plane_plane ---
+    #[test]
+    fn plane_plane_intersect_xz_yz_gives_z_axis() {
+        // XZ-plane (normal Y) and YZ-plane (normal X) intersect along Z-axis
+        let xz = Plane::from_point_normal(Vec3::zeros(), Direction3::new_normalize(Vec3::new(0.0, 1.0, 0.0)));
+        let yz = Plane::from_point_normal(Vec3::zeros(), Direction3::new_normalize(Vec3::new(1.0, 0.0, 0.0)));
+        let line = plane_plane_intersect(&xz, &yz).unwrap();
+        // The intersection line direction should be parallel to Z
+        let dot = line.direction.dot(&Vec3::new(0.0, 0.0, 1.0)).abs();
+        assert_abs_diff_eq!(dot, 1.0, epsilon = 1e-5);
+        // The intersection point should lie on both planes
+        assert_abs_diff_eq!(xz.signed_distance_to_point(&line.point), 0.0, epsilon = 1e-5);
+        assert_abs_diff_eq!(yz.signed_distance_to_point(&line.point), 0.0, epsilon = 1e-5);
+    }
+
+    #[test]
+    fn plane_plane_parallel_returns_none() {
+        let a = y_plane(0.0);
+        let b = y_plane(1.0);
+        assert!(plane_plane_intersect(&a, &b).is_none());
+    }
+
+    // --- proptest: distance symmetry ---
+    proptest! {
+        #[test]
+        fn point_sphere_distance_non_negative(
+            x in -100.0f32..100.0, y in -100.0f32..100.0, z in -100.0f32..100.0,
+            r in 0.1f32..50.0,
+        ) {
+            let sphere = Sphere::new(Vec3::zeros(), r);
+            let d = point_sphere_distance(&Vec3::new(x, y, z), &sphere);
+            prop_assert!(d >= 0.0);
+        }
+
+        #[test]
+        fn point_aabb_distance_non_negative(
+            x in -100.0f32..100.0, y in -100.0f32..100.0, z in -100.0f32..100.0,
+        ) {
+            let aabb = Aabb::new(Vec3::new(-1.0, -1.0, -1.0), Vec3::new(1.0, 1.0, 1.0));
+            let d = point_aabb_distance(&Vec3::new(x, y, z), &aabb);
+            prop_assert!(d >= 0.0);
+        }
+    }
+}
