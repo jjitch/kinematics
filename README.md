@@ -7,3 +7,9 @@ featuring followings,
 * primitive geometry modeling
 * defining kinematics on geometry
 * solve kinematics under given constraints
+
+## Technical details
+
+* This project consists of followings.
+  * backend: Rust and WebAssembly
+  * 3DView by web stack
