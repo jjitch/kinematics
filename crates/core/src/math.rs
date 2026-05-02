@@ -1,5 +1,6 @@
 pub use nalgebra;
 
+pub type Vec2 = nalgebra::Vector2<f32>;
 pub type Vec3 = nalgebra::Vector3<f32>;
 pub type Vec4 = nalgebra::Vector4<f32>;
 pub type Mat3 = nalgebra::Matrix3<f32>;

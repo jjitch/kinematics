@@ -1,5 +1,9 @@
 pub mod calculations;
+pub mod construct;
 pub mod math;
+pub mod mesh;
+pub mod mesh_data;
+pub mod mesh_gen;
 pub mod primitives;
 pub mod transform;
 
