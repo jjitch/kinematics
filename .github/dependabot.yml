@@ -16,8 +16,10 @@ updates:
           - "glam*"
           - "simba*"
       # low-noise: batch all remaining patch bumps into one PR
-      cargo-patch:
-        update-type: "patch"
+      cargo-minor-patch:
+        update-types:
+          - "minor"
+          - "patch"
 
   - package-ecosystem: npm
     directory: /frontend
@@ -39,6 +41,10 @@ updates:
         patterns:
           - "eslint"
           - "@eslint/*"
+      npm-minor-patch:
+        update-types:
+          - "minor"
+          - "patch"
 
   - package-ecosystem: github-actions
     directory: /
