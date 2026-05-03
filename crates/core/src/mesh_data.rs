@@ -4,7 +4,16 @@ use crate::mesh::Mesh;
 
 /// Flat serialization-friendly representation of a mesh.
 /// Positions and normals are stored as `[x, y, z, x, y, z, ...]`.
-#[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
+#[derive(
+    Debug,
+    Clone,
+    PartialEq,
+    Serialize,
+    Deserialize,
+    rkyv::Archive,
+    rkyv::Serialize,
+    rkyv::Deserialize,
+)]
 pub struct MeshData {
     pub positions: Vec<f32>,
     pub normals: Vec<f32>,
@@ -21,11 +30,13 @@ impl MeshData {
     }
 
     pub fn to_bytes(&self) -> Vec<u8> {
-        bincode::serialize(self).expect("MeshData bincode serialization is infallible")
+        rkyv::to_bytes::<rkyv::rancor::Error>(self)
+            .expect("MeshData rkyv serialization is infallible")
+            .to_vec()
     }
 
-    pub fn from_bytes(bytes: &[u8]) -> Result<Self, bincode::Error> {
-        bincode::deserialize(bytes)
+    pub fn from_bytes(bytes: &[u8]) -> Result<Self, rkyv::rancor::Error> {
+        rkyv::from_bytes::<MeshData, rkyv::rancor::Error>(bytes)
     }
 }
 
@@ -118,16 +129,16 @@ mod tests {
         assert!(json.ends_with('}'));
     }
 
-    // --- bincode ---
+    // --- rkyv ---
     #[test]
-    fn bincode_round_trip() {
+    fn rkyv_round_trip() {
         let data = reference_mesh().to_mesh_data();
         let restored = MeshData::from_bytes(&data.to_bytes()).unwrap();
         assert_eq!(data, restored);
     }
 
     #[test]
-    fn bincode_is_smaller_than_json() {
+    fn rkyv_is_smaller_than_json() {
         let data = reference_mesh().to_mesh_data();
         let json_size = data.to_json().len();
         let bin_size = data.to_bytes().len();
