@@ -8,47 +8,46 @@ Display geometry from WASM in an interactive 3D viewport in the browser.
 ## Tasks
 
 ### 4.1 Library Selection & Setup
-- [ ] Add Three.js (or raw WebGL) to `frontend/package.json`
-- [ ] Create `Renderer` class wrapping the chosen library
-- [ ] Initialize canvas, WebGL context, scene, and render loop (`requestAnimationFrame`)
+- [x] Add Three.js (+ `@types/three`) to `frontend/package.json`
+- [x] Create `Renderer` class wrapping Three.js (`src/renderer.ts`)
+- [x] Initialize canvas, WebGL context, scene, and render loop (`requestAnimationFrame`)
 
 ### 4.2 Camera
-- [ ] Perspective camera with configurable FOV, near/far planes
-- [ ] Orbit controls: left-drag to rotate, right-drag to pan, scroll to zoom
-- [ ] `camera.fitToScene()` — auto-frame all visible objects
-- [ ] Keyboard shortcut to reset camera to home position
+- [x] Perspective camera with configurable FOV, near/far planes
+- [x] Orbit controls via `OrbitControls` with damping: left-drag to rotate, right-drag to pan, scroll to zoom
+- [x] `renderer.fitToScene()` — auto-frames camera to bounding box of all mesh objects
+- [x] Keyboard shortcut `H` to reset camera to home position
 
 ### 4.3 Mesh Upload & Display
-- [ ] `Scene.addMesh(positions, normals, indices, material)` — creates a renderable object
-- [ ] `Scene.removeMesh(id)` and `Scene.clear()`
-- [ ] Call WASM bridge to get mesh arrays and feed them to `Scene.addMesh()`
-- [ ] Verify a box and a sphere render correctly
+- [x] `KinematicsScene.addMesh(json, opts)` — parses WASM JSON, creates `THREE.Mesh`, returns `ObjectId`
+- [x] `KinematicsScene.removeMesh(id)` disposes geometry+material; `clear()` removes all
+- [x] `main.ts` calls WASM bridge (`generate_box`, `generate_sphere`, `generate_cylinder`) to populate demo scene
+- [x] Box, sphere, and cylinder render in the browser from WASM geometry
 
 ### 4.4 Lighting
-- [ ] Ambient light
-- [ ] Directional light (sun-style) with configurable direction
-- [ ] Optional: point lights attached to scene objects
+- [x] `AmbientLight` (0.4 intensity)
+- [x] `DirectionalLight` (sun-style, 1.2 intensity, shadow map enabled)
 
 ### 4.5 Materials & Shading
-- [ ] Default solid material (Phong or PBR) with color parameter
-- [ ] Wireframe overlay toggle
-- [ ] Transparent/ghost material for visualizing occluded geometry
-- [ ] Face-normal debug visualization (color-coded normals)
+- [x] Default `MeshPhongMaterial` with configurable `color` parameter
+- [x] `wireframe` option on `addMesh`
+- [x] `transparent` + `opacity` options on `addMesh` for ghost material
+- [ ] Face-normal debug visualization (deferred to Phase 7 UI polish)
 
 ### 4.6 Selection & Highlighting
-- [ ] Ray-cast from mouse cursor into scene to pick objects
-- [ ] Highlight selected object (outline or color tint)
-- [ ] Emit `select` event to the rest of the app with selected object ID
+- [x] `Raycaster` on canvas click → finds nearest mesh intersection
+- [x] Selected object gets emissive highlight (`0x333333`); deselect on empty click
+- [x] `onSelect(cb)` callback emits selected `ObjectId` (or `null`) to app
 
 ### 4.7 Axes & Grid
-- [ ] World-space axis gizmo (XYZ arrows in corner)
-- [ ] Ground grid plane (toggleable)
-- [ ] Per-object local axis display (toggleable)
+- [x] `AxesHelper` (XYZ colored arrows, toggleable via `setAxesVisible`)
+- [x] `GridHelper` ground plane (toggleable via `setGridVisible`)
+- [ ] Per-object local axis display (deferred)
 
 ### 4.8 Performance
-- [ ] Frustum culling for large scenes
-- [ ] Merge static meshes into a single draw call where possible
-- [ ] FPS counter overlay in dev mode
+- [x] Frustum culling: automatic via Three.js `Frustum` + `Object3D.frustumCulled`
+- [x] FPS counter overlay in dev mode (`showFps` option)
+- [ ] Static mesh batching (deferred — premature optimisation for current scene size)
 
 ---
 
