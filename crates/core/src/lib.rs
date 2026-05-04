@@ -1,6 +1,7 @@
 pub mod calculations;
 pub mod chain;
 pub mod construct;
+pub mod ik;
 pub mod math;
 pub mod mesh;
 pub mod mesh_data;

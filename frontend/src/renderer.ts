@@ -9,8 +9,8 @@ export interface RendererOptions {
 export class Renderer {
   readonly scene: KinematicsScene;
   private webgl: THREE.WebGLRenderer;
-  private camera: THREE.PerspectiveCamera;
-  private controls: OrbitControls;
+  readonly camera: THREE.PerspectiveCamera;
+  readonly controls: OrbitControls;
   private axesHelper: THREE.AxesHelper;
   private gridHelper: THREE.GridHelper;
   private raycaster = new THREE.Raycaster();

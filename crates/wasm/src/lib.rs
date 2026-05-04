@@ -1,5 +1,6 @@
 use kinematics_core::chain::{Body, Chain, Joint, JointType};
 use kinematics_core::hello_message;
+use kinematics_core::ik::{solve_ik, solve_ik_step, PositionTarget, SolverConfig};
 use kinematics_core::mesh_data::MeshData;
 use kinematics_core::mesh_gen;
 use wasm_bindgen::prelude::*;
@@ -156,6 +157,65 @@ pub fn chain_compute_fk(chain_json: &str) -> String {
     format!(
         "{{\"transforms\":{}}}",
         serde_json::to_string(&map).unwrap()
+    )
+}
+
+/// Run the full IK solve.
+/// `target_json`: `{"body_id":N,"target":[x,y,z]}`
+/// `config_json`: `{"max_iter":50,"tolerance":1e-4,"damping":0.01,"step_size":1.0}` (all optional)
+/// Returns `{"ok":true,"chain":<chain>,"result":{"converged":bool,"iterations":N,"residual":f}}`
+#[wasm_bindgen]
+pub fn ik_solve(chain_json: &str, target_json: &str, config_json: &str) -> String {
+    let mut chain: Chain = match serde_json::from_str(chain_json) {
+        Ok(c) => c,
+        Err(e) => return format!("{{\"ok\":false,\"error\":\"{}\"}}", e),
+    };
+    let target: PositionTarget = match serde_json::from_str(target_json) {
+        Ok(t) => t,
+        Err(e) => return format!("{{\"ok\":false,\"error\":\"{}\"}}", e),
+    };
+    let config: SolverConfig = if config_json.is_empty() || config_json == "{}" {
+        SolverConfig::default()
+    } else {
+        match serde_json::from_str(config_json) {
+            Ok(c) => c,
+            Err(e) => return format!("{{\"ok\":false,\"error\":\"{}\"}}", e),
+        }
+    };
+    let result = solve_ik(&mut chain, &target, &config);
+    let chain_str = serde_json::to_string(&chain).unwrap();
+    let result_str = serde_json::to_string(&result).unwrap();
+    format!(
+        "{{\"ok\":true,\"chain\":{},\"result\":{}}}",
+        chain_str, result_str
+    )
+}
+
+/// Run one IK iteration (for per-frame streaming).
+/// Returns `{"ok":true,"chain":<chain>,"residual":f}`
+#[wasm_bindgen]
+pub fn ik_solve_step(chain_json: &str, target_json: &str, config_json: &str) -> String {
+    let mut chain: Chain = match serde_json::from_str(chain_json) {
+        Ok(c) => c,
+        Err(e) => return format!("{{\"ok\":false,\"error\":\"{}\"}}", e),
+    };
+    let target: PositionTarget = match serde_json::from_str(target_json) {
+        Ok(t) => t,
+        Err(e) => return format!("{{\"ok\":false,\"error\":\"{}\"}}", e),
+    };
+    let config: SolverConfig = if config_json.is_empty() || config_json == "{}" {
+        SolverConfig::default()
+    } else {
+        match serde_json::from_str(config_json) {
+            Ok(c) => c,
+            Err(e) => return format!("{{\"ok\":false,\"error\":\"{}\"}}", e),
+        }
+    };
+    let residual = solve_ik_step(&mut chain, &target, &config);
+    let chain_str = serde_json::to_string(&chain).unwrap();
+    format!(
+        "{{\"ok\":true,\"chain\":{},\"residual\":{}}}",
+        chain_str, residual
     )
 }
 
@@ -324,5 +384,59 @@ mod tests {
         let v: serde_json::Value = serde_json::from_str(&fk).unwrap();
         assert!(v["transforms"].is_object());
         assert!(v["transforms"]["0"].is_object());
+    }
+
+    /// Build a one-joint arm (revolute Y, link length 1 in child frame).
+    fn build_one_joint_arm() -> String {
+        let cj = chain_new();
+        let ra = chain_add_body(&cj, "A");
+        let va: serde_json::Value = serde_json::from_str(&ra).unwrap();
+        // Body B with local_transform offset: needs full body JSON
+        // Use chain_add_body then edit local_transform via serde
+        let rb = chain_add_body(&chain_str(&va), "B");
+        let vb: serde_json::Value = serde_json::from_str(&rb).unwrap();
+        let parent_id = va["id"].as_u64().unwrap() as u32;
+        let child_id = vb["id"].as_u64().unwrap() as u32;
+        // Set child local_transform to translate(1,0,0) by deserializing and mutating chain
+        let mut chain: Chain = serde_json::from_str(chain_str(&vb).as_str()).unwrap();
+        chain.bodies[1].local_transform =
+            kinematics_core::chain::Pose::from_translation(1.0, 0.0, 0.0);
+        let chain_json = serde_json::to_string(&chain).unwrap();
+        let rj = chain_add_joint(
+            &chain_json,
+            parent_id,
+            child_id,
+            "revolute",
+            0.0,
+            1.0,
+            0.0,
+            -std::f32::consts::PI,
+            std::f32::consts::PI,
+        );
+        let vj: serde_json::Value = serde_json::from_str(&rj).unwrap();
+        chain_str(&vj)
+    }
+
+    #[test]
+    fn ik_solve_converges_on_reachable_target() {
+        let chain_json = build_one_joint_arm();
+        let target = r#"{"body_id":1,"target":[0.0,0.0,-1.0]}"#;
+        let result = ik_solve(&chain_json, target, "{}");
+        let v: serde_json::Value = serde_json::from_str(&result).unwrap();
+        assert_eq!(v["ok"], true);
+        assert_eq!(v["result"]["converged"], true);
+        let residual = v["result"]["residual"].as_f64().unwrap();
+        assert!(residual < 1e-3, "residual too large: {residual}");
+    }
+
+    #[test]
+    fn ik_solve_step_returns_updated_chain() {
+        let chain_json = build_one_joint_arm();
+        let target = r#"{"body_id":1,"target":[0.0,0.0,-1.0]}"#;
+        let result = ik_solve_step(&chain_json, target, "{}");
+        let v: serde_json::Value = serde_json::from_str(&result).unwrap();
+        assert_eq!(v["ok"], true);
+        assert!(v["residual"].as_f64().unwrap() < 2.0);
+        assert!(v["chain"].is_object());
     }
 }
