@@ -5,91 +5,311 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
     <title>Kinematics</title>
     <style>
-      * {
-        margin: 0;
-        padding: 0;
-        box-sizing: border-box;
-      }
-      html,
-      body {
-        width: 100%;
-        height: 100%;
-        overflow: hidden;
-        background: #1a1a2e;
-        display: flex;
-      }
-      #sidebar {
-        width: 220px;
-        flex-shrink: 0;
-        background: #12122a;
-        padding: 16px;
-        overflow-y: auto;
+      * { margin: 0; padding: 0; box-sizing: border-box; }
+      html, body { width: 100%; height: 100%; overflow: hidden; background: #1a1a2e; }
+
+      #app {
         display: flex;
         flex-direction: column;
-        gap: 8px;
-      }
-      #sidebar h2 {
-        color: #aaa;
+        height: 100%;
         font-family: monospace;
+        color: #ccc;
+      }
+
+      /* ── Toolbar ── */
+      #toolbar {
+        display: flex;
+        align-items: center;
+        gap: 4px;
+        padding: 4px 10px;
+        background: #0e0e22;
+        border-bottom: 1px solid #2a2a44;
+        flex-shrink: 0;
+        height: 36px;
+      }
+      #toolbar .title {
         font-size: 13px;
-        font-weight: normal;
-        text-transform: uppercase;
-        letter-spacing: 1px;
-        margin-bottom: 4px;
+        font-weight: bold;
+        color: #4488ff;
+        margin-right: 8px;
       }
-      #slider-panel input[type="range"] {
-        width: 100%;
-        accent-color: #4488ff;
-      }
-      #slider-panel label {
+      #toolbar button {
+        background: #1a1a3a;
+        border: 1px solid #3a3a60;
         color: #ccc;
         font-family: monospace;
         font-size: 11px;
-        display: block;
-        margin-bottom: 2px;
+        padding: 3px 10px;
+        cursor: pointer;
+        border-radius: 3px;
       }
-      .joint-row {
-        margin-bottom: 14px;
+      #toolbar button:hover { background: #2a2a50; }
+      #toolbar .sep { width: 1px; height: 20px; background: #2a2a44; margin: 0 4px; }
+
+      /* ── Main area ── */
+      #main-area {
+        display: flex;
+        flex: 1;
+        min-height: 0;
       }
-      .joint-value {
+
+      /* ── Left panel ── */
+      #left-panel {
+        width: 200px;
+        flex-shrink: 0;
+        background: #12122a;
+        border-right: 1px solid #2a2a44;
+        display: flex;
+        flex-direction: column;
+        overflow: hidden;
+      }
+      .panel-section {
+        border-bottom: 1px solid #2a2a44;
+      }
+      .panel-header {
+        font-size: 10px;
+        text-transform: uppercase;
+        letter-spacing: 1px;
+        color: #666;
+        padding: 6px 10px 4px;
+        background: #0e0e22;
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+      }
+      .panel-header button {
+        background: none;
+        border: 1px solid #3a3a60;
         color: #888;
         font-family: monospace;
         font-size: 10px;
-        text-align: right;
-        display: block;
+        padding: 1px 6px;
+        cursor: pointer;
+        border-radius: 2px;
+      }
+      .panel-header button:hover { background: #1a1a3a; color: #ccc; }
+
+      #scene-tree-container {
+        flex: 1;
+        overflow-y: auto;
+        padding: 4px 0;
+      }
+      .tree-item {
+        padding: 4px 10px;
+        font-size: 11px;
+        cursor: pointer;
+        white-space: nowrap;
+        overflow: hidden;
+        text-overflow: ellipsis;
+      }
+      .tree-item:hover { background: #1a1a3a; }
+      .tree-item.selected { background: #1a3a6a; color: #88bbff; }
+      .tree-body { color: #aaddff; }
+      .tree-joint { color: #aaffcc; }
+
+      #left-bottom {
+        padding: 8px;
+        border-top: 1px solid #2a2a44;
+        font-size: 10px;
+        color: #556;
+      }
+      #left-bottom label { display: flex; gap: 6px; align-items: center; margin-bottom: 4px; cursor: pointer; }
+      #left-bottom select { background: #1a1a3a; border: 1px solid #3a3a60; color: #ccc; font-family: monospace; font-size: 10px; padding: 1px 4px; width: 100%; margin-top: 2px; }
+
+      /* ── Viewport area ── */
+      #viewport-area {
+        flex: 1;
+        display: flex;
+        flex-direction: column;
+        min-width: 0;
+        position: relative;
       }
       #viewport {
         flex: 1;
         display: block;
-        min-width: 0;
-        position: relative;
+        min-height: 0;
       }
-      #ik-overlay {
-        position: fixed;
-        bottom: 12px;
-        left: 50%;
-        transform: translateX(-50%);
+
+      /* ── Timeline ── */
+      #timeline {
+        height: 88px;
+        background: #0a0a20;
+        border-top: 1px solid #2a2a44;
+        padding: 6px 10px;
+        flex-shrink: 0;
+        display: flex;
+        flex-direction: column;
+        gap: 4px;
+      }
+      #timeline-controls {
+        display: flex;
+        align-items: center;
+        gap: 6px;
+      }
+      #timeline-controls button {
+        background: #1a1a3a;
+        border: 1px solid #3a3a60;
+        color: #ccc;
         font-family: monospace;
         font-size: 11px;
+        padding: 2px 8px;
+        cursor: pointer;
+        border-radius: 2px;
+      }
+      #timeline-controls button:hover { background: #2a2a50; }
+      #timeline-controls button.active { background: #334; border-color: #4488ff; color: #4488ff; }
+      #timeline-time { color: #888; font-size: 10px; min-width: 50px; }
+      #timeline-scrub { flex: 1; accent-color: #4488ff; }
+      #timeline-duration { width: 44px; background: #1a1a3a; border: 1px solid #3a3a60; color: #ccc; font-family: monospace; font-size: 10px; padding: 1px 4px; text-align: center; }
+      #timeline-keyframes { display: flex; gap: 6px; align-items: center; font-size: 10px; color: #556; }
+      #kf-list { flex: 1; overflow-x: auto; white-space: nowrap; color: #4488ff; }
+      #loop-toggle { display: flex; align-items: center; gap: 4px; cursor: pointer; }
+
+      /* ── IK overlay ── */
+      #ik-overlay {
+        position: absolute;
+        top: 8px;
+        left: 50%;
+        transform: translateX(-50%);
+        font-size: 10px;
         color: #888;
         pointer-events: none;
+        background: rgba(0,0,0,0.4);
+        padding: 2px 8px;
+        border-radius: 3px;
       }
-      #ik-status {
-        font-weight: bold;
+
+      /* ── Right panel ── */
+      #right-panel {
+        width: 200px;
+        flex-shrink: 0;
+        background: #12122a;
+        border-left: 1px solid #2a2a44;
+        display: flex;
+        flex-direction: column;
+        overflow: hidden;
       }
+      #props-container {
+        flex: 1;
+        overflow-y: auto;
+        padding: 8px;
+      }
+      .props-empty { color: #446; font-size: 10px; }
+      .prop-heading { font-size: 11px; color: #88aaff; margin-bottom: 6px; font-weight: bold; border-bottom: 1px solid #2a2a44; padding-bottom: 3px; }
+      .prop-row { display: flex; gap: 4px; align-items: center; margin-bottom: 4px; }
+      .prop-label { font-size: 10px; color: #778; min-width: 44px; }
+      .prop-val { font-size: 10px; color: #aaa; }
+      .prop-row input[type="number"] { flex: 1; background: #1a1a3a; border: 1px solid #3a3a60; color: #ccc; font-family: monospace; font-size: 10px; padding: 2px 4px; min-width: 0; }
+      .prop-vec3 { margin-bottom: 6px; }
+      .prop-vec3 .prop-label { display: block; margin-bottom: 2px; }
+      .prop-vec3 input[type="number"] { width: 52px; background: #1a1a3a; border: 1px solid #3a3a60; color: #ccc; font-family: monospace; font-size: 10px; padding: 2px 3px; }
+
+      /* Joint sliders section */
+      #joints-section { padding: 8px; border-top: 1px solid #2a2a44; }
+      #slider-panel input[type="range"] { width: 100%; accent-color: #4488ff; }
+      #slider-panel label { color: #ccc; font-size: 10px; display: block; margin-bottom: 2px; }
+      .joint-row { margin-bottom: 10px; }
+      .joint-value { color: #556; font-size: 10px; text-align: right; display: block; }
+
+      /* ── Status bar ── */
+      #status-bar {
+        display: flex;
+        align-items: center;
+        gap: 16px;
+        padding: 2px 10px;
+        background: #0e0e22;
+        border-top: 1px solid #2a2a44;
+        flex-shrink: 0;
+        height: 22px;
+        font-size: 10px;
+        color: #556;
+      }
+      #status-bar span { color: #778; }
+      #status-fps { color: #44ff88; }
+      #status-sel { color: #aaa; }
     </style>
   </head>
   <body>
-    <aside id="sidebar">
-      <h2>Joints</h2>
-      <div id="slider-panel"></div>
-      <h2 style="margin-top:16px">IK Target</h2>
-      <div style="color:#888;font-family:monospace;font-size:11px">
-        Drag the yellow sphere to move the end-effector
+    <div id="app">
+      <!-- Toolbar -->
+      <div id="toolbar">
+        <span class="title">Kinematics</span>
+        <div class="sep"></div>
+        <button id="btn-new" title="New chain">New</button>
+        <button id="btn-save" title="Save to localStorage">Save</button>
+        <div class="sep"></div>
+        <button id="btn-add-body" title="Add a new body">+ Body</button>
+        <button id="btn-add-joint" title="Add joint from selected body">+ Joint</button>
+        <div class="sep"></div>
+        <button id="btn-undo" title="Undo (Ctrl+Z)" disabled>↩ Undo</button>
+        <button id="btn-redo" title="Redo (Ctrl+Y)" disabled>↪ Redo</button>
+        <div class="sep"></div>
+        <button id="btn-export-json" title="Export pose as JSON">JSON</button>
+        <button id="btn-export-csv" title="Export trajectory as CSV">CSV</button>
       </div>
-    </aside>
-    <canvas id="viewport"></canvas>
-    <div id="ik-overlay">IK: <span id="ik-status">—</span></div>
+
+      <!-- Main area -->
+      <div id="main-area">
+        <!-- Left: scene tree -->
+        <aside id="left-panel">
+          <div class="panel-section">
+            <div class="panel-header">
+              <span>Scene</span>
+            </div>
+            <div id="scene-tree-container"></div>
+          </div>
+          <div id="left-bottom">
+            <div class="panel-header" style="padding: 6px 0 4px;"><span>IK Target</span></div>
+            <label>End-effector body:
+              <select id="ik-body-select"></select>
+            </label>
+            <div style="margin-top:4px;color:#446">Drag yellow sphere in viewport</div>
+          </div>
+        </aside>
+
+        <!-- Center: viewport + timeline -->
+        <div id="viewport-area">
+          <canvas id="viewport"></canvas>
+          <div id="ik-overlay">IK: <span id="ik-status">—</span></div>
+          <!-- Timeline -->
+          <div id="timeline">
+            <div id="timeline-controls">
+              <button id="btn-stop" title="Stop">■</button>
+              <button id="btn-play-pause" title="Play/Pause (Space)">▶</button>
+              <button id="btn-record" title="Record keyframe at current time">⏺ Rec</button>
+              <span id="timeline-time">0.00s</span>
+              <input id="timeline-scrub" type="range" min="0" max="100" value="0" step="0.1" />
+              <input id="timeline-duration" type="number" value="5" min="1" max="60" title="Duration (s)" />
+              <span style="color:#556;font-size:10px">s</span>
+            </div>
+            <div id="timeline-keyframes">
+              <span>KF:</span>
+              <span id="kf-list">—</span>
+              <label id="loop-toggle"><input type="checkbox" id="loop-check" /> Loop</label>
+            </div>
+          </div>
+        </div>
+
+        <!-- Right: properties + joint sliders -->
+        <aside id="right-panel">
+          <div class="panel-section">
+            <div class="panel-header"><span>Properties</span></div>
+            <div id="props-container"><p class="props-empty">Nothing selected</p></div>
+          </div>
+          <div id="joints-section">
+            <div class="panel-header" style="padding: 4px 0 4px;"><span>Joint Values</span></div>
+            <div id="slider-panel"></div>
+          </div>
+        </aside>
+      </div>
+
+      <!-- Status bar -->
+      <div id="status-bar">
+        <span>FPS: <span id="status-fps">—</span></span>
+        <span>IK: <span id="status-ik">—</span></span>
+        <span id="status-sel">Nothing selected</span>
+      </div>
+    </div>
     <script type="module" src="/src/main.ts"></script>
   </body>
 </html>

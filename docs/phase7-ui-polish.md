@@ -8,22 +8,23 @@ Deliver a complete, usable tool with a clean interface, simulation playback, and
 ## Tasks
 
 ### 7.1 Layout & Shell
-- [ ] Three-panel layout: left sidebar (scene tree), center 3D viewport, right properties panel
+- [x] Three-panel layout: left sidebar (scene tree), center 3D viewport, right properties panel
 - [ ] Responsive sizing (panels resizable via drag handle)
-- [ ] Toolbar: New, Open, Save, Export buttons
-- [ ] Status bar: FPS counter, solver status, selection info
+- [x] Toolbar: New, Save, + Body, + Joint, Undo, Redo, JSON, CSV export buttons
+- [x] Status bar: FPS counter, solver status, selection info
 
 ### 7.2 Scene Tree (Left Panel)
-- [ ] Hierarchical list of all bodies and joints
-- [ ] Click to select, double-click to rename
+- [x] Hierarchical list of all bodies and joints
+- [x] Click to select
+- [ ] Double-click to rename
 - [ ] Context menu: Add Body, Add Joint, Delete, Duplicate
 - [ ] Visibility toggle (eye icon) per object
 
 ### 7.3 Properties Panel (Right Panel)
-- [ ] Show transform (position, rotation, scale) for selected body
-- [ ] Show joint parameters: type, axis, limits, current value
+- [x] Show transform (position) for selected body; inline editing
+- [x] Show joint parameters: type, axis limits, current value; inline editing
 - [ ] Show constraint parameters: target position/orientation
-- [ ] Inline editing: number inputs with drag-to-change
+- [ ] Drag-to-change on number inputs
 
 ### 7.4 Constraint Editor
 - [ ] "Add Constraint" dialog: choose type, target body, target value
@@ -32,16 +33,16 @@ Deliver a complete, usable tool with a clean interface, simulation playback, and
 - [ ] Visual link in 3D view between constrained body and its target gizmo
 
 ### 7.5 Simulation Timeline
-- [ ] Timeline bar at the bottom of the viewport
-- [ ] Keyframe system: record joint values at specific time points
-- [ ] Play / Pause / Stop / Step controls
-- [ ] Scrub handle to manually move through time
-- [ ] Loop toggle
+- [x] Timeline bar at the bottom of the viewport
+- [x] Keyframe system: record joint values at specific time points
+- [x] Play / Pause / Stop controls
+- [x] Scrub handle to manually move through time
+- [x] Loop toggle
 
 ### 7.6 Export
 - [ ] Export current mesh as OBJ or GLTF
-- [ ] Export joint trajectory as CSV (`time, j0, j1, ..., jN`)
-- [ ] Export solved pose as JSON (body transforms at current time)
+- [x] Export joint trajectory as CSV (`time, j0, j1, ..., jN`)
+- [x] Export solved pose as JSON (body transforms at current time)
 - [ ] Copy current camera view to clipboard as PNG
 
 ### 7.7 Keyboard Shortcuts
@@ -49,14 +50,14 @@ Deliver a complete, usable tool with a clean interface, simulation playback, and
 - [ ] `R` — rotate selected gizmo
 - [ ] `S` — scale selected object
 - [ ] `Del` — delete selected
-- [ ] `Space` — play/pause simulation
-- [ ] `F` — frame selected object in camera
-- [ ] `Ctrl+Z` / `Ctrl+Y` — undo/redo
+- [x] `Space` — play/pause simulation
+- [x] `F` — fit/frame all objects in camera
+- [x] `Ctrl+Z` / `Ctrl+Y` — undo/redo
 
 ### 7.8 Undo / Redo
-- [ ] Command pattern: every user action is a reversible `Command` object
-- [ ] `UndoStack` with configurable depth (default 50)
-- [ ] All property edits, add/delete operations, constraint changes are undoable
+- [x] Command pattern: every user action is a reversible `Command` object
+- [x] `UndoStack` with configurable depth (default 50)
+- [x] Property edits, add operations, joint value drags are undoable
 
 ### 7.9 Performance & Profiling
 - [ ] Profile WASM solver time with `console.time` / `wasm_timer`
