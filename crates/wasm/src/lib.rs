@@ -1,3 +1,4 @@
+use kinematics_core::chain::{Body, Chain, Joint, JointType};
 use kinematics_core::hello_message;
 use kinematics_core::mesh_data::MeshData;
 use kinematics_core::mesh_gen;
@@ -52,6 +53,110 @@ pub fn mesh_to_typed_arrays(mesh_json: &str) -> String {
         Ok(data) => data.to_json(),
         Err(e) => format!("{{\"error\":\"{}\"}}", e),
     }
+}
+
+/// Returns an empty `Chain` serialised as JSON.
+#[wasm_bindgen]
+pub fn chain_new() -> String {
+    serde_json::to_string(&Chain::new()).unwrap()
+}
+
+/// Adds a body with the given name to the chain.
+/// Returns `{"ok":true,"chain":<chain_json>,"id":<body_id>}`.
+#[wasm_bindgen]
+pub fn chain_add_body(chain_json: &str, name: &str) -> String {
+    let mut chain: Chain = match serde_json::from_str(chain_json) {
+        Ok(c) => c,
+        Err(e) => return format!("{{\"ok\":false,\"error\":\"{}\"}}", e),
+    };
+    let id = chain.add_body(Body::new(name));
+    let chain_str = serde_json::to_string(&chain).unwrap();
+    format!("{{\"ok\":true,\"chain\":{},\"id\":{}}}", chain_str, id)
+}
+
+/// Adds a joint to the chain.
+/// `kind` is `"revolute"`, `"prismatic"`, or `"fixed"`.
+/// `axis_x/y/z` are ignored for `"fixed"`.
+/// Returns `{"ok":true,"chain":<chain_json>,"id":<joint_id>}` or `{"ok":false,"error":"..."}`.
+#[allow(clippy::too_many_arguments)]
+#[wasm_bindgen]
+pub fn chain_add_joint(
+    chain_json: &str,
+    parent_id: u32,
+    child_id: u32,
+    kind: &str,
+    axis_x: f32,
+    axis_y: f32,
+    axis_z: f32,
+    min: f32,
+    max: f32,
+) -> String {
+    let mut chain: Chain = match serde_json::from_str(chain_json) {
+        Ok(c) => c,
+        Err(e) => return format!("{{\"ok\":false,\"error\":\"{}\"}}", e),
+    };
+    let axis = [axis_x, axis_y, axis_z];
+    let mut joint = match kind {
+        "revolute" => Joint::revolute(parent_id, child_id, axis),
+        "prismatic" => Joint::prismatic(parent_id, child_id, axis),
+        "fixed" => Joint {
+            joint_type: JointType::Fixed,
+            ..Joint::revolute(parent_id, child_id, axis)
+        },
+        other => {
+            return format!(
+                "{{\"ok\":false,\"error\":\"unknown joint kind: {}\"}}",
+                other
+            )
+        }
+    };
+    joint.min = min;
+    joint.max = max;
+    match chain.add_joint(joint) {
+        Ok(id) => {
+            let chain_str = serde_json::to_string(&chain).unwrap();
+            format!("{{\"ok\":true,\"chain\":{},\"id\":{}}}", chain_str, id)
+        }
+        Err(e) => format!("{{\"ok\":false,\"error\":\"{:?}\"}}", e),
+    }
+}
+
+/// Sets a joint value (clamped to limits).
+/// Returns updated chain JSON or `{"ok":false,"error":"..."}` if joint not found.
+#[wasm_bindgen]
+pub fn chain_set_joint_value(chain_json: &str, joint_id: u32, value: f32) -> String {
+    let mut chain: Chain = match serde_json::from_str(chain_json) {
+        Ok(c) => c,
+        Err(e) => return format!("{{\"ok\":false,\"error\":\"{}\"}}", e),
+    };
+    if chain.set_joint_value(joint_id, value) {
+        let chain_str = serde_json::to_string(&chain).unwrap();
+        format!("{{\"ok\":true,\"chain\":{}}}", chain_str)
+    } else {
+        format!(
+            "{{\"ok\":false,\"error\":\"joint {} not found\"}}",
+            joint_id
+        )
+    }
+}
+
+/// Computes FK for the chain.
+/// Returns `{"transforms":{"<body_id>":{"translation":[x,y,z],"rotation":[rx,ry,rz,rw],"scale":[sx,sy,sz]},...}}`.
+#[wasm_bindgen]
+pub fn chain_compute_fk(chain_json: &str) -> String {
+    let chain: Chain = match serde_json::from_str(chain_json) {
+        Ok(c) => c,
+        Err(e) => return format!("{{\"error\":\"{}\"}}", e),
+    };
+    let transforms = chain.compute_transforms();
+    let map: std::collections::HashMap<String, _> = transforms
+        .into_iter()
+        .map(|(k, v)| (k.to_string(), v))
+        .collect();
+    format!(
+        "{{\"transforms\":{}}}",
+        serde_json::to_string(&map).unwrap()
+    )
 }
 
 #[cfg(test)]
@@ -109,5 +214,115 @@ mod tests {
     fn mesh_to_typed_arrays_returns_error_json_on_bad_input() {
         let result = mesh_to_typed_arrays("not json");
         assert!(result.contains("error"), "expected error key in: {result}");
+    }
+
+    #[test]
+    fn chain_new_returns_valid_json() {
+        let json = chain_new();
+        let chain: Chain = serde_json::from_str(&json).expect("chain_new produced invalid JSON");
+        assert_eq!(chain.bodies.len(), 0);
+        assert_eq!(chain.joints.len(), 0);
+    }
+
+    #[test]
+    fn chain_add_body_returns_ok_with_id() {
+        let chain_json = chain_new();
+        let result = chain_add_body(&chain_json, "root");
+        let v: serde_json::Value = serde_json::from_str(&result).unwrap();
+        assert_eq!(v["ok"], true);
+        assert_eq!(v["id"], 0);
+        let chain: Chain = serde_json::from_str(v["chain"].to_string().as_str()).unwrap();
+        assert_eq!(chain.bodies.len(), 1);
+        assert_eq!(chain.bodies[0].name, "root");
+    }
+
+    fn chain_str(v: &serde_json::Value) -> String {
+        v["chain"].to_string()
+    }
+
+    #[test]
+    fn chain_add_joint_revolute_returns_ok() {
+        let cj = chain_new();
+        let r1 = chain_add_body(&cj, "A");
+        let v1: serde_json::Value = serde_json::from_str(&r1).unwrap();
+        let r2 = chain_add_body(&chain_str(&v1), "B");
+        let v2: serde_json::Value = serde_json::from_str(&r2).unwrap();
+        let parent_id = v1["id"].as_u64().unwrap() as u32;
+        let child_id = v2["id"].as_u64().unwrap() as u32;
+        let r3 = chain_add_joint(
+            &chain_str(&v2),
+            parent_id,
+            child_id,
+            "revolute",
+            0.0,
+            1.0,
+            0.0,
+            -std::f32::consts::PI,
+            std::f32::consts::PI,
+        );
+        let v3: serde_json::Value = serde_json::from_str(&r3).unwrap();
+        assert_eq!(v3["ok"], true);
+        assert_eq!(v3["id"], 0);
+    }
+
+    #[test]
+    fn chain_add_joint_errors_on_self_loop() {
+        let cj = chain_new();
+        let r = chain_add_body(&cj, "A");
+        let v: serde_json::Value = serde_json::from_str(&r).unwrap();
+        let id = v["id"].as_u64().unwrap() as u32;
+        let r2 = chain_add_joint(
+            &chain_str(&v),
+            id,
+            id,
+            "revolute",
+            0.0,
+            1.0,
+            0.0,
+            -std::f32::consts::PI,
+            std::f32::consts::PI,
+        );
+        let v2: serde_json::Value = serde_json::from_str(&r2).unwrap();
+        assert_eq!(v2["ok"], false);
+    }
+
+    #[test]
+    fn chain_set_joint_value_updates_chain() {
+        let cj = chain_new();
+        let r1 = chain_add_body(&cj, "A");
+        let v1: serde_json::Value = serde_json::from_str(&r1).unwrap();
+        let r2 = chain_add_body(&chain_str(&v1), "B");
+        let v2: serde_json::Value = serde_json::from_str(&r2).unwrap();
+        let parent_id = v1["id"].as_u64().unwrap() as u32;
+        let child_id = v2["id"].as_u64().unwrap() as u32;
+        let r3 = chain_add_joint(
+            &chain_str(&v2),
+            parent_id,
+            child_id,
+            "revolute",
+            0.0,
+            1.0,
+            0.0,
+            -std::f32::consts::PI,
+            std::f32::consts::PI,
+        );
+        let v3: serde_json::Value = serde_json::from_str(&r3).unwrap();
+        let joint_id = v3["id"].as_u64().unwrap() as u32;
+        let r4 = chain_set_joint_value(&chain_str(&v3), joint_id, 1.0);
+        let v4: serde_json::Value = serde_json::from_str(&r4).unwrap();
+        assert_eq!(v4["ok"], true);
+        let chain: Chain = serde_json::from_str(&chain_str(&v4)).unwrap();
+        assert_eq!(chain.joints[0].value, 1.0);
+    }
+
+    #[test]
+    fn chain_compute_fk_returns_transforms() {
+        let cj = chain_new();
+        let r1 = chain_add_body(&cj, "root");
+        let v1: serde_json::Value = serde_json::from_str(&r1).unwrap();
+        let fk = chain_compute_fk(&chain_str(&v1));
+        let v: serde_json::Value = serde_json::from_str(&fk).unwrap();
+        assert!(v["transforms"].is_object());
+        assert!(v["transforms"]["0"].is_object());
     }
 }

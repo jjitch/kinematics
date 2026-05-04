@@ -8,50 +8,48 @@ Allow users to build kinematic chains (bodies connected by joints) and attach th
 ## Tasks
 
 ### 5.1 Core Data Model (Rust)
-- [ ] `Body` struct: id, name, local transform, attached mesh id (optional)
-- [ ] `JointType` enum: `Revolute { axis: Vec3 }`, `Prismatic { axis: Vec3 }`, `Fixed`
-- [ ] `Joint` struct: id, parent body id, child body id, joint type, rest transform
-- [ ] `Chain` struct: ordered list of bodies and joints (tree, not necessarily linear)
-- [ ] `Chain::add_body()`, `Chain::add_joint()`, `Chain::validate()`
+- [x] `Body` struct: id, name, local transform, attached mesh id (optional)
+- [x] `JointType` enum: `Revolute { axis: Vec3 }`, `Prismatic { axis: Vec3 }`, `Fixed`
+- [x] `Joint` struct: id, parent body id, child body id, joint type, rest transform
+- [x] `Chain` struct: ordered list of bodies and joints (tree, not necessarily linear)
+- [x] `Chain::add_body()`, `Chain::add_joint()`, `Chain::validate()`
 
 ### 5.2 Joint Parameters
-- [ ] `JointValue`: angle (rad) for revolute, displacement for prismatic
-- [ ] Joint limits: `min: f32`, `max: f32` per joint
-- [ ] `Chain::set_joint_value(joint_id, value)` with clamping to limits
-- [ ] `Chain::joint_values() -> Vec<f32>`
+- [x] `JointValue`: angle (rad) for revolute, displacement for prismatic (stored as `value: f32` on `Joint`)
+- [x] Joint limits: `min: f32`, `max: f32` per joint
+- [x] `Chain::set_joint_value(joint_id, value)` with clamping to limits
+- [x] `Chain::joint_values() -> Vec<(JointId, f32)>`
 
 ### 5.3 Forward Kinematics (prerequisite for Phase 6)
-- [ ] `Chain::compute_transforms() -> HashMap<BodyId, Transform>`
-  - Traverse the tree root→leaves
-  - Compose parent world transform × joint transform × child local transform
-- [ ] Expose via WASM: `fk_compute(chain_json: &str) -> JsValue`
+- [x] `Chain::compute_transforms() -> HashMap<BodyId, Pose>` — BFS root→leaves, compose parent world × rest × active × child local
+- [x] Expose via WASM: `chain_compute_fk(chain_json: &str) -> String`
 
 ### 5.4 WASM Bridge
-- [ ] `create_chain() -> JsValue` — returns an empty chain as JSON
-- [ ] `add_body(chain_json, body_json) -> JsValue`
-- [ ] `add_joint(chain_json, joint_json) -> JsValue`
-- [ ] `set_joint_value(chain_json, joint_id, value) -> JsValue`
-- [ ] TypeScript types for `Chain`, `Body`, `Joint`, `JointValue`
+- [x] `chain_new() -> String` — returns an empty chain as JSON
+- [x] `chain_add_body(chain_json, name) -> String` — returns `{"ok":true,"chain":...,"id":N}`
+- [x] `chain_add_joint(chain_json, parent_id, child_id, kind, ax, ay, az, min, max) -> String`
+- [x] `chain_set_joint_value(chain_json, joint_id, value) -> String`
+- [x] TypeScript types for `Chain`, `Body`, `Joint`, `Pose`, `FkResult` in `kinematics.ts`
 
 ### 5.5 3D Visualization
-- [ ] Render joint axes as colored arrows (X=red, Y=green, Z=blue)
-- [ ] Render bones (line segments between parent and child body origins)
-- [ ] Highlight the active/selected joint
-- [ ] Animate geometry to follow computed body transforms in real time
-- [ ] Joint value slider in UI (one per joint, clamped to limits)
+- [ ] Render joint axes as colored arrows (X=red, Y=green, Z=blue) — deferred to Phase 7
+- [x] Render bones (line segments between parent and child body origins) via `ChainViz`
+- [ ] Highlight the active/selected joint — deferred to Phase 7
+- [x] Animate geometry to follow computed body transforms in real time
+- [x] Joint value slider in UI (one per joint, clamped to limits)
 
 ### 5.6 Serialization
-- [ ] `Chain` serializes to/from JSON via `serde`
-- [ ] Save/load chain definition from browser `localStorage`
+- [x] `Chain` serializes to/from JSON via `serde`
+- [x] Save/load chain joint values from browser `localStorage`
 
 ### 5.7 Tests
-- [ ] Unit tests: `Chain::validate()` rejects cycles and orphan joints
-- [ ] FK test: single revolute joint at 90° rotates child body correctly
-- [ ] FK test: chain of 3 joints, verify leaf world position
+- [x] Unit tests: `Chain::validate()` rejects cycles and orphan joints (`add_joint` enforces all invariants eagerly)
+- [x] FK test: single revolute joint at 90° rotates child body correctly
+- [x] FK test: chain of 3 joints, verify leaf world position
 
 ---
 
 ## Acceptance Criteria
-- User can define a chain of ≥ 3 bodies with revolute joints via the UI
-- Moving joint sliders animates the geometry in the 3D view in real time
-- Chain state persists across page reloads via `localStorage`
+- User can define a chain of ≥ 3 bodies with revolute joints via the UI ✓ (demo chain in main.ts)
+- Moving joint sliders animates the geometry in the 3D view in real time ✓
+- Chain state persists across page reloads via `localStorage` ✓

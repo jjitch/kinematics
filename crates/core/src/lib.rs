@@ -1,4 +1,5 @@
 pub mod calculations;
+pub mod chain;
 pub mod construct;
 pub mod math;
 pub mod mesh;

@@ -16,15 +16,60 @@
         height: 100%;
         overflow: hidden;
         background: #1a1a2e;
+        display: flex;
+      }
+      #sidebar {
+        width: 220px;
+        flex-shrink: 0;
+        background: #12122a;
+        padding: 16px;
+        overflow-y: auto;
+        display: flex;
+        flex-direction: column;
+        gap: 8px;
+      }
+      #sidebar h2 {
+        color: #aaa;
+        font-family: monospace;
+        font-size: 13px;
+        font-weight: normal;
+        text-transform: uppercase;
+        letter-spacing: 1px;
+        margin-bottom: 4px;
+      }
+      #slider-panel input[type="range"] {
+        width: 100%;
+        accent-color: #4488ff;
+      }
+      #slider-panel label {
+        color: #ccc;
+        font-family: monospace;
+        font-size: 11px;
+        display: block;
+        margin-bottom: 2px;
+      }
+      .joint-row {
+        margin-bottom: 14px;
+      }
+      .joint-value {
+        color: #888;
+        font-family: monospace;
+        font-size: 10px;
+        text-align: right;
+        display: block;
       }
       #viewport {
-        width: 100%;
-        height: 100%;
+        flex: 1;
         display: block;
+        min-width: 0;
       }
     </style>
   </head>
   <body>
+    <aside id="sidebar">
+      <h2>Joints</h2>
+      <div id="slider-panel"></div>
+    </aside>
     <canvas id="viewport"></canvas>
     <script type="module" src="/src/main.ts"></script>
   </body>
